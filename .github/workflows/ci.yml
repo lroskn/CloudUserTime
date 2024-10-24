@@ -1,6 +1,46 @@
-version: '3.8'
-services:
-  assessment:
-    image: mrksdh/assessment
-    ports:
-      - "8080:8080"
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Log in to Docker Hub (if needed, otherwise remove)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Build Docker Compose services
+      - name: Build and run Docker Compose
+        run: docker-compose -f docker-compose.yml up --build -d
+
+      # Wait for services to be ready (optional, adjust as needed)
+      - name: Wait for services
+        run: sleep 10
+
+      # Run the tests (adjust this command to match your actual test setup)
+      - name: Run app tests
+        run: |
+          docker exec <your-app-container-name> java -jar /app/app.jar
+
+      # Shut down services after tests
+      - name: Shut down Docker Compose
+        run: docker-compose -f docker-compose.yml down
